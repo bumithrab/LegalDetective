@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Legal Detective | AI Document Assistant</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="logo">
+            ⚖️ <span>LEGAL</span> DETECTIVE
+        </div>
+
+        <div class="nav-links">
+            <a href="#home">Home</a>
+            <a href="#how">How It Works</a>
+            <a href="#analyze">Analyze</a>
+        </div>
+    </nav>
+
+
+    <!-- HERO -->
+    <section class="hero" id="home">
+
+        <div class="hero-text">
+
+            <p class="small-title">AI-POWERED LEGAL DOCUMENT ANALYSIS</p>
+
+            <h1>
+                Your document has clues.
+                <span>Let AI find them.</span>
+            </h1>
+
+            <p class="description">
+                Upload a legal document, find important clauses,
+                and understand complicated legal language in simpler terms.
+            </p>
+
+            <button class="primary-btn" onclick="goToAnalyze()">
+                🔍 Analyze a Document
+            </button>
+
+        </div>
+
+
+        <!-- Document visual -->
+        <div class="document-area">
+
+            <div class="document-card">
+
+                <div class="document-top">
+                    <span>LEGAL DOCUMENT</span>
+                    <span>AI ANALYSIS</span>
+                </div>
+
+                <div class="document-line long"></div>
+                <div class="document-line"></div>
+
+                <div class="highlight">
+                    <small>CLAUSE 04</small>
+                    <strong>SECURITY DEPOSIT</strong>
+                    <p>₹50,000</p>
+                </div>
+
+                <div class="document-line long"></div>
+
+                <div class="highlight second">
+                    <small>CLAUSE 08</small>
+                    <strong>NOTICE PERIOD</strong>
+                    <p>2 Months</p>
+                </div>
+
+                <div class="document-line"></div>
+
+            </div>
+
+            <div class="scan-label">
+                🔍 AI FOUND 2 IMPORTANT CLAUSES
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- HOW IT WORKS -->
+    <section class="how" id="how">
+
+        <p class="small-title">HOW IT WORKS</p>
+
+        <h2>From document to understanding.</h2>
+
+        <div class="steps">
+
+            <div class="step">
+                <div class="step-number">01</div>
+                <h3>Upload</h3>
+                <p>Upload your legal document.</p>
+            </div>
+
+            <div class="step">
+                <div class="step-number">02</div>
+                <h3>Detect</h3>
+                <p>AI finds important clauses.</p>
+            </div>
+
+            <div class="step">
+                <div class="step-number">03</div>
+                <h3>Understand</h3>
+                <p>Ask questions and get simple explanations.</p>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ANALYZE -->
+    <section class="analyze" id="analyze">
+
+        <div class="analyze-box">
+
+            <p class="small-title">DOCUMENT ANALYZER</p>
+
+            <h2>Start your investigation.</h2>
+
+            <p>
+                Upload a PDF legal document to begin.
+            </p>
+
+            <div class="upload-box" id="uploadBox">
+
+                <div class="upload-icon">📄</div>
+
+                <h3>Drop your document here</h3>
+
+                <p>PDF files only</p>
+
+                <input
+                    type="file"
+                    id="fileInput"
+                    accept=".pdf"
+                    hidden
+                >
+
+                <button class="upload-btn" onclick="chooseFile()">
+                    Choose Document
+                </button>
+
+            </div>
+
+            <div id="fileResult"></div>
+            <!-- ASK THE DOCUMENT -->
+
+
+
+        </div>
+
+    </section>
+
+
+    <!-- FOOTER -->
+    <footer>
+
+        <div>
+            ⚖️ <strong>LEGAL DETECTIVE</strong>
+        </div>
+
+        <p>
+            AI-assisted legal document understanding
+        </p>
+
+        <div class="warning">
+            ⚠️ This tool provides document information, not legal advice.
+        </div>
+
+    </footer>
+
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>
