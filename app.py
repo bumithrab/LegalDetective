@@ -6,6 +6,17 @@ from pathlib import Path
 from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
 from openai import OpenAI
+import re
+
+try:
+    from pypdf import PdfReader
+except Exception:
+    PdfReader = None
+
+try:
+    from docx import Document as DocxDocument
+except Exception:
+    DocxDocument = None
 
 # ============================================================
 # LEGAL DETECTIVE - ROBUST DOCUMENT ANALYZER
@@ -29,6 +40,9 @@ ALLOWED_EXTENSIONS = {
 
 MODEL = os.environ.get("OPENAI_MODEL", "gpt-6-luna")
 API_KEY = os.environ.get("OPENAI_API_KEY")
+# Classroom/demo mode is ON by default. It requires no API key or card.
+# Set DEMO_MODE=false later if you intentionally connect a paid AI API.
+DEMO_MODE = os.environ.get("DEMO_MODE", "true").lower() in {"1", "true", "yes", "on"}
 
 client = OpenAI(api_key=API_KEY) if API_KEY else None
 
@@ -152,6 +166,151 @@ def ask_model_with_file(instructions, text_prompt, openai_file_id):
     )
 
     return response.output_text
+
+
+
+def extract_local_text(path):
+    """Extract enough local text for the no-card classroom demo."""
+    suffix = Path(path).suffix.lower()
+    try:
+        if suffix == ".txt" or suffix == ".md":
+            return Path(path).read_text(encoding="utf-8", errors="ignore")
+        if suffix == ".rtf":
+            raw = Path(path).read_text(encoding="utf-8", errors="ignore")
+            raw = re.sub(r"\\[a-zA-Z]+-?\\d* ?", " ", raw)
+            return re.sub(r"[{}]", " ", raw)
+        if suffix == ".docx" and DocxDocument:
+            doc = DocxDocument(str(path))
+            return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+        if suffix == ".pdf" and PdfReader:
+            reader = PdfReader(str(path))
+            return "\n".join((page.extract_text() or "") for page in reader.pages)
+    except Exception as exc:
+        print("LOCAL TEXT EXTRACTION ERROR:", repr(exc))
+    return ""
+
+
+def _clean_sentence(text, limit=220):
+    text = re.sub(r"\\s+", " ", text or "").strip()
+    return text if len(text) <= limit else text[:limit].rsplit(" ", 1)[0] + "…"
+
+
+def _find_sentences(text, keywords, limit=5):
+    chunks = re.split(r"(?<=[.!?])\\s+|\\n+", text or "")
+    out = []
+    for chunk in chunks:
+        c = _clean_sentence(chunk)
+        low = c.lower()
+        if c and any(k in low for k in keywords) and c not in out:
+            out.append(c)
+        if len(out) >= limit:
+            break
+    return out
+
+
+def demo_classify(text, filename):
+    combined = ((filename or "") + "\n" + (text or "")).lower()
+    legal_terms = [
+        "agreement", "contract", "lease", "rent", "tenant", "landlord",
+        "party", "parties", "whereas", "hereinafter", "shall", "liable",
+        "court", "judgment", "order", "petition", "plaint", "affidavit",
+        "deed", "notice", "legal notice", "act,", "section ", "statute",
+        "regulation", "law", "jurisdiction", "arbitration", "indemnity",
+        "confidentiality", "employment", "employee", "employer", "witness",
+        "consideration", "termination", "governing law", "power of attorney"
+    ]
+    hits = [k for k in legal_terms if k in combined]
+    is_legal = len(hits) >= 2 or any(x in (filename or "").lower() for x in ["agreement", "lease", "deed", "contract", "notice", "judgment", "petition", "affidavit", "legal"])
+    if not is_legal:
+        return {
+            "is_legal": False,
+            "classification": "not_legal",
+            "document_type": "General / non-legal document",
+            "confidence": 88,
+            "reason": "The document does not contain enough clear legal-document indicators for this classroom prototype.",
+            "jurisdiction": "Not specified"
+        }
+    low = combined
+    if any(x in low for x in ["rent", "tenant", "landlord", "lease"]): dtype = "Rental / Lease Agreement"
+    elif any(x in low for x in ["employment", "employee", "employer", "salary"]): dtype = "Employment Agreement"
+    elif any(x in low for x in ["judgment", "court order", "decree"]): dtype = "Judgment / Court Order"
+    elif any(x in low for x in ["affidavit", "sworn statement"]): dtype = "Affidavit / Declaration"
+    elif any(x in low for x in ["petition", "plaint", "written statement"]): dtype = "Court Pleading / Petition"
+    elif "deed" in low: dtype = "Deed / Property Document"
+    elif "notice" in low: dtype = "Legal Notice"
+    elif any(x in low for x in ["act,", "statute", "section ", "bill"]): dtype = "Statute / Legal Instrument"
+    else: dtype = "Legal Agreement / Document"
+    return {
+        "is_legal": True,
+        "classification": "legal",
+        "document_type": dtype,
+        "confidence": min(98, 78 + min(len(hits) * 2, 20)),
+        "reason": "Legal terms and document structure were detected. This classroom prototype will demonstrate the analysis workflow.",
+        "jurisdiction": "Not specified in the document"
+    }
+
+
+def demo_analysis(path, filename):
+    text = extract_local_text(path)
+    low = text.lower()
+    classification = demo_classify(text, filename)
+    dtype = classification["document_type"]
+
+    parties = _find_sentences(text, ["landlord", "tenant", "employer", "employee", "party", "parties"], 4)
+    dates = _find_sentences(text, ["date", "dated", "commence", "effective", "expiry", "termination", "notice period"], 5)
+    money = _find_sentences(text, ["rent", "salary", "amount", "fee", "deposit", "payment", "consideration", "penalty"], 6)
+    clauses = _find_sentences(text, ["shall", "must", "may", "termination", "notice", "indemn", "confidential", "dispute", "arbitration"], 8)
+    laws = _find_sentences(text, ["act,", "section ", "statute", "regulation", "rule ", "article ", "law"], 5)
+
+    rights = []
+    obligations = []
+    risks = []
+    if any(x in low for x in ["tenant", "rent", "lease"]):
+        rights.append("The document appears to define rights connected with possession/use of the premises and the rental relationship.")
+        obligations.append("The parties appear to have payment, maintenance, notice, or compliance duties described in the document.")
+        if "security deposit" in low or "deposit" in low:
+            risks.append("Check the security-deposit amount, refund conditions, deductions, and return timeline carefully.")
+    if "termination" in low or "notice period" in low:
+        risks.append("Termination and notice provisions should be checked for the required notice period and conditions.")
+    if "penalty" in low or "late fee" in low:
+        risks.append("Payment-default or penalty language deserves attention because it may create additional financial exposure.")
+    if "arbitration" in low:
+        risks.append("An arbitration provision may affect how disputes are resolved and where proceedings occur.")
+    if not risks:
+        risks.append("Review the document for unclear obligations, deadlines, payment terms, and dispute provisions before relying on it.")
+
+    summary = f"This classroom prototype identified the upload as a {dtype}. It found legal-style provisions and organized them into a reader-friendly report."
+    simple = "In simple terms, Legal Detective is highlighting what the document is about, who appears to be involved, what they may need to do, important money/dates, and areas that deserve closer attention."
+    if text:
+        summary += " The report below is based on text that could be extracted from the uploaded file."
+    else:
+        summary += " The file appears to be image-based or difficult to extract locally, so the demo uses a general document workflow rather than pretending to read unavailable text."
+
+    return normalize_analysis({
+        "title": filename.rsplit(".", 1)[0].replace("_", " ").title() or "Legal document",
+        "document_type": dtype,
+        "jurisdiction": classification.get("jurisdiction", "Not specified"),
+        "language": "English / detected from document text" if text else "Not detected",
+        "summary": summary,
+        "simple_explanation": simple,
+        "parties": parties or ["Parties are not clearly extractable from this document."],
+        "legal_references": laws or ["No specific Act, section, or legal authority was clearly extracted in demo mode."],
+        "important_terms": ["Legal document classification", "Rights and obligations", "Important dates", "Financial terms", "Risk / attention points"],
+        "financial_information": money or ["No clear financial amount was extracted in demo mode."],
+        "important_dates": dates or ["No clear date was extracted in demo mode."],
+        "key_clauses": clauses or ["Key legal provisions could not be confidently extracted from the available text."],
+        "rights": rights or ["The document may define rights between its parties; review the source wording for exact details."],
+        "obligations": obligations or ["The document may create duties for one or more parties; review the source wording for exact details."],
+        "risks_and_attention": risks,
+        "missing_or_unclear": ["This is a classroom demonstration mode, not a professional legal opinion.", "Exact legal effect should be checked against the complete original document."],
+        "termination": "The report checks for termination language; see the key clauses and dates above.",
+        "dispute_resolution": "The report checks for arbitration, court, or dispute language in the extracted text.",
+        "governing_law": "Not specified unless clearly extracted from the document.",
+        "timeline": dates[:6] or ["No clear timeline was extracted in demo mode."],
+        "questions_to_ask": ["Which provisions create the most important obligations?", "What deadlines or notice periods should I watch?", "Are there payment, penalty, termination, or dispute terms that need clarification?"],
+        "overall_attention_level": "Medium",
+        "overall_reason": "The prototype highlights provisions that a reader should review, but it is not a substitute for professional legal advice."
+    })
 
 
 def normalize_analysis(data):
@@ -500,20 +659,28 @@ def analyze():
         local_path = UPLOAD_FOLDER / unique_name
         file.save(local_path)
 
-        # Upload ORIGINAL file to OpenAI. This lets the model inspect
-        # scanned/image PDFs instead of depending only on pypdf.
-        openai_file_id = upload_to_openai(str(local_path))
-
-        DOCUMENTS[document_id] = {
-            "openai_file_id": openai_file_id,
-            "local_path": str(local_path),
-            "filename": original_filename
-        }
-
-        classification = classify_document(
-            openai_file_id,
-            original_filename
-        )
+        # Classroom mode: no API key, card, or paid AI credits required.
+        # The original OpenAI integration remains available for later use.
+        if DEMO_MODE:
+            text = extract_local_text(str(local_path))
+            classification = demo_classify(text, original_filename)
+            DOCUMENTS[document_id] = {
+                "local_path": str(local_path),
+                "filename": original_filename,
+                "demo": True,
+                "text": text
+            }
+        else:
+            # Upload ORIGINAL file to OpenAI so the model can inspect
+            # scanned/image PDFs instead of depending only on pypdf.
+            openai_file_id = upload_to_openai(str(local_path))
+            DOCUMENTS[document_id] = {
+                "openai_file_id": openai_file_id,
+                "local_path": str(local_path),
+                "filename": original_filename,
+                "demo": False
+            }
+            classification = classify_document(openai_file_id, original_filename)
 
         is_legal = bool(classification.get("is_legal", False))
         classification_type = classification.get(
@@ -523,6 +690,7 @@ def analyze():
         if not is_legal:
             return jsonify({
                 "status": "not_legal",
+                "mode": "classroom_demo" if DEMO_MODE else "ai_api",
                 "document_id": document_id,
                 "filename": original_filename,
                 "document_type": classification.get(
@@ -544,13 +712,17 @@ def analyze():
                 )
             })
 
-        analysis = analyze_legal_document(
-            openai_file_id,
-            original_filename
-        )
+        if DEMO_MODE:
+            analysis = demo_analysis(str(local_path), original_filename)
+        else:
+            analysis = analyze_legal_document(
+                DOCUMENTS[document_id]["openai_file_id"],
+                original_filename
+            )
 
         return jsonify({
             "status": "legal",
+            "mode": "classroom_demo" if DEMO_MODE else "ai_api",
             "document_id": document_id,
             "filename": original_filename,
             "classification_confidence": classification.get(
@@ -627,14 +799,27 @@ User's question:
 Answer using only the uploaded document.
 """
 
-        answer = ask_model_with_file(
-            instructions,
-            prompt,
-            document["openai_file_id"]
-        )
+        if DEMO_MODE or document.get("demo"):
+            text = document.get("text", "")
+            q = question.lower()
+            relevant = _find_sentences(text, [w for w in re.findall(r"[a-zA-Z]{4,}", q)[:6]], 4) if text else []
+            if relevant:
+                answer = "Demo document answer based on extracted text:\n\n" + "\n".join("• " + x for x in relevant)
+            else:
+                answer = (
+                    "In classroom demo mode, I could not find a specific answer in the extracted text. "
+                    "Please check the original document for the exact wording."
+                )
+        else:
+            answer = ask_model_with_file(
+                instructions,
+                prompt,
+                document["openai_file_id"]
+            )
 
         return jsonify({
             "status": "success",
+            "mode": "classroom_demo" if DEMO_MODE else "ai_api",
             "answer": answer
         })
 
