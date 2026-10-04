@@ -2,3 +2,5 @@ Flask
 openai
 Werkzeug
 gunicorn
+pypdf
+python-docx
