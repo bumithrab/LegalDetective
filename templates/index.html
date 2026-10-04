@@ -1,708 +1,631 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Legal Detective — AI Legal Document Investigator</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal Detective</title>
 
-<style>
-:root{
-  --bg:#070b14;
-  --panel:#0e1524;
-  --panel2:#111b2d;
-  --border:#243149;
-  --text:#f8fafc;
-  --muted:#94a3b8;
-  --gold:#e4b95f;
-  --gold2:#f4d78c;
-  --blue:#7c8cff;
-  --green:#39d98a;
-  --red:#ff6b7a;
-  --orange:#ffb84d;
-  --shadow:0 25px 80px rgba(0,0,0,.35);
-}
-*{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{
-  margin:0;
-  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
-  background:
-    radial-gradient(circle at 5% 0%,rgba(72,86,255,.18),transparent 30%),
-    radial-gradient(circle at 95% 10%,rgba(228,185,95,.12),transparent 25%),
-    linear-gradient(180deg,#070b14,#090f1c 50%,#070b14);
-  color:var(--text);
-  min-height:100vh;
-}
-.container{width:min(1180px,92%);margin:auto}
-nav{
-  height:76px;
-  border-bottom:1px solid rgba(148,163,184,.12);
-  display:flex;align-items:center;justify-content:space-between;
-  position:sticky;top:0;z-index:20;
-  background:rgba(7,11,20,.84);backdrop-filter:blur(16px);
-}
-.logo{font-weight:900;letter-spacing:1px;font-size:19px}
-.logo span{color:var(--gold)}
-.nav-links{display:flex;gap:26px}
-.nav-links a{color:#b9c2d2;text-decoration:none;font-size:14px}
-.nav-links a:hover{color:var(--gold2)}
-.hero{
-  padding:85px 0 65px;
-  display:grid;grid-template-columns:1.1fr .9fr;gap:55px;align-items:center;
-}
-.badge,.eyebrow{
-  display:inline-flex;align-items:center;gap:8px;
-  padding:8px 13px;border-radius:999px;
-  border:1px solid rgba(228,185,95,.25);
-  background:rgba(228,185,95,.07);
-  color:var(--gold2);font-size:12px;font-weight:800;letter-spacing:1.5px;
-}
-h1{
-  font-family:Georgia,serif;
-  font-size:clamp(48px,6vw,78px);
-  line-height:.98;margin:20px 0;
-  letter-spacing:-2px;
-}
-h1 span{color:var(--gold)}
-.hero p{
-  color:var(--muted);font-size:17px;line-height:1.8;max-width:680px;
-}
-.hero-actions{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
-.btn{
-  border:0;border-radius:12px;padding:14px 20px;
-  cursor:pointer;font-weight:800;font-size:14px;
-}
-.btn-primary{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#15110a}
-.btn-secondary{background:#121b2c;color:#e2e8f0;border:1px solid var(--border)}
-.btn:hover{transform:translateY(-1px)}
-.hero-card{
-  min-height:420px;border:1px solid var(--border);border-radius:28px;
-  background:linear-gradient(145deg,rgba(17,27,45,.95),rgba(9,14,26,.95));
-  box-shadow:var(--shadow);padding:26px;position:relative;overflow:hidden;
-}
-.hero-card:before{
-  content:"";position:absolute;width:220px;height:220px;border-radius:50%;
-  background:rgba(124,140,255,.16);filter:blur(35px);right:-80px;top:-80px;
-}
-.scan-head{display:flex;justify-content:space-between;align-items:center;color:#cbd5e1;font-size:12px}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 16px var(--green)}
-.mock-doc{
-  margin:25px auto 0;width:min(330px,90%);min-height:310px;
-  border-radius:10px;background:#f8f5ed;color:#111827;padding:28px;
-  transform:rotate(2deg);box-shadow:0 25px 50px rgba(0,0,0,.4);
-}
-.mock-title{font-family:Georgia,serif;font-size:21px;font-weight:bold;margin-bottom:22px}
-.line{height:7px;background:#d7d2c8;border-radius:4px;margin:10px 0}
-.line.short{width:65%}.line.mid{width:82%}
-.highlight{padding:13px;margin:20px 0;background:#eee5d2;border-left:4px solid #b88d39}
-.highlight small{color:#86672f;font-weight:bold}.highlight b{display:block;margin-top:4px}
-.card{
-  background:rgba(14,21,36,.88);border:1px solid var(--border);
-  border-radius:22px;padding:25px;margin-bottom:18px;box-shadow:var(--shadow);
-}
-.section-title{font-family:Georgia,serif;font-size:30px;margin:0 0 8px}
-.muted{color:var(--muted);line-height:1.7}
-.upload-card{padding:28px}
-.dropzone{
-  border:2px dashed #34435f;border-radius:20px;padding:48px 25px;text-align:center;
-  transition:.2s;background:rgba(17,27,45,.55);cursor:pointer;
-}
-.dropzone:hover,.dropzone.drag{border-color:var(--gold);background:rgba(228,185,95,.05)}
-.upload-icon{font-size:50px;margin-bottom:10px}
-.dropzone h3{margin:8px 0;font-size:22px}
-.dropzone p{color:var(--muted);margin:8px auto 18px;max-width:650px}
-#fileInput{display:none}
-.file-row{
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-  margin-top:15px;padding:14px 16px;border-radius:13px;
-  background:#0a1120;border:1px solid var(--border);display:none;
-}
-.file-name{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.file-size{font-size:12px;color:var(--muted)}
-.analyze-btn{width:100%;margin-top:14px;font-size:16px}
-.loading{display:none;text-align:center;padding:35px}
-.spinner{
-  width:38px;height:38px;border:3px solid #27334b;border-top-color:var(--gold);
-  border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 15px;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-.status{
-  padding:20px;border-radius:17px;margin-bottom:18px;border:1px solid var(--border);
-}
-.status.legal{background:rgba(57,217,138,.08);border-color:rgba(57,217,138,.3)}
-.status.notlegal{background:rgba(255,184,77,.08);border-color:rgba(255,184,77,.3)}
-.status.error{background:rgba(255,107,122,.08);border-color:rgba(255,107,122,.3)}
-.status-title{font-size:18px;font-weight:900;margin-bottom:7px}
-.status small{color:var(--muted)}
-.result{display:none;padding-bottom:60px}
-.meta-grid{
-  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:18px;
-}
-.meta{
-  background:#0a1120;border:1px solid var(--border);border-radius:14px;padding:15px;
-}
-.meta strong{display:block;color:#7f8da5;font-size:11px;letter-spacing:1px;margin-bottom:7px}
-.meta span{font-weight:800}
-.tabs{
-  display:flex;gap:8px;overflow:auto;padding:7px;margin:0 0 18px;
-  background:#09101d;border:1px solid var(--border);border-radius:16px;
-  position:sticky;top:85px;z-index:10;
-}
-.tab{
-  white-space:nowrap;border:0;background:transparent;color:#9aa8bc;
-  padding:10px 13px;border-radius:10px;cursor:pointer;font-weight:800;
-}
-.tab.active{background:#172238;color:var(--gold2)}
-.panel{display:none}.panel.active{display:block}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
-.info-card{
-  background:#0b1322;border:1px solid var(--border);border-radius:18px;padding:20px;
-}
-.info-card h3{margin:0 0 14px;font-size:18px}
-.info-card.full{grid-column:1/-1}
-.list{padding:0;margin:0;list-style:none}
-.list li{
-  padding:12px 0;border-bottom:1px solid rgba(148,163,184,.09);
-  color:#d4dbe7;line-height:1.65;
-}
-.list li:last-child{border-bottom:0}
-.empty{color:#718096;font-style:italic}
-.level{
-  display:inline-flex;padding:7px 11px;border-radius:999px;font-weight:900;font-size:12px;
-  background:#172238;color:var(--gold2)
-}
-.ask-card{margin-top:18px}
-.ask-row{display:flex;gap:10px}
-.ask-row input{
-  flex:1;min-width:0;background:#080f1c;border:1px solid #33415a;color:white;
-  border-radius:12px;padding:14px;font-size:15px;outline:none;
-}
-.ask-row input:focus{border-color:var(--gold)}
-.answer{
-  display:none;margin-top:15px;padding:17px;border-radius:14px;
-  background:#080f1c;border:1px solid var(--border);color:#dbe3ef;line-height:1.75;
-  white-space:pre-wrap;
-}
-.footer{
-  border-top:1px solid rgba(148,163,184,.1);padding:35px 0 50px;color:#64748b;
-  text-align:center;font-size:12px;line-height:1.7
-}
-@media(max-width:850px){
-  .hero{grid-template-columns:1fr;padding-top:55px}
-  .nav-links{display:none}
-  .meta-grid{grid-template-columns:repeat(2,1fr)}
-}
-@media(max-width:620px){
-  .container{width:94%}
-  .hero{gap:28px}
-  .grid{grid-template-columns:1fr}
-  .info-card.full{grid-column:auto}
-  .meta-grid{grid-template-columns:1fr}
-  .ask-row{flex-direction:column}
-  .tabs{top:77px}
-}
-</style>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #07111f;
+            color: #f4f7fb;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 6%;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            background: #081525;
+        }
+
+        .logo {
+            font-size: 22px;
+            font-weight: 800;
+            color: #e5b85c;
+        }
+
+        .nav-link {
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 75px 20px 45px;
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 8px 15px;
+            border-radius: 30px;
+            background: rgba(229,184,92,0.1);
+            color: #e5b85c;
+            border: 1px solid rgba(229,184,92,0.3);
+            font-size: 13px;
+            margin-bottom: 22px;
+        }
+
+        h1 {
+            font-size: clamp(40px, 7vw, 72px);
+            line-height: 1.05;
+            margin-bottom: 20px;
+        }
+
+        h1 span {
+            color: #e5b85c;
+        }
+
+        .hero p {
+            color: #aab7c7;
+            font-size: 18px;
+            line-height: 1.7;
+            max-width: 720px;
+            margin: auto;
+        }
+
+        .container {
+            width: min(1050px, 92%);
+            margin: auto;
+        }
+
+        .upload-card {
+            background: #0c1a2c;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 22px;
+            padding: 35px;
+            margin: 25px auto 60px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+        }
+
+        .drop-zone {
+            border: 2px dashed #42536a;
+            border-radius: 18px;
+            padding: 50px 25px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: #e5b85c;
+            background: rgba(229,184,92,0.05);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .drop-zone h2 {
+            margin-bottom: 10px;
+        }
+
+        .drop-zone p {
+            color: #93a4b8;
+            margin-bottom: 22px;
+        }
+
+        /* Hide the ugly browser file input */
+        #fileInput {
+            display: none;
+        }
+
+        .choose-btn {
+            display: inline-block;
+            padding: 13px 24px;
+            border-radius: 10px;
+            background: #e5b85c;
+            color: #101820;
+            font-weight: 800;
+            cursor: pointer;
+            border: none;
+        }
+
+        .choose-btn:hover {
+            background: #f0ca78;
+        }
+
+        .file-name {
+            margin-top: 18px;
+            color: #e5b85c;
+            font-weight: 600;
+            word-break: break-word;
+        }
+
+        .analyze-btn {
+            width: 100%;
+            margin-top: 20px;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            background: #e5b85c;
+            color: #101820;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .analyze-btn:hover {
+            background: #f0ca78;
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background: #111f32;
+            color: #cbd5e1;
+            text-align: center;
+        }
+
+        .results {
+            display: none;
+            margin-bottom: 80px;
+        }
+
+        .results-header {
+            margin-bottom: 25px;
+        }
+
+        .results-header h2 {
+            font-size: 30px;
+            margin-bottom: 8px;
+        }
+
+        .results-header p {
+            color: #94a3b8;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .card {
+            background: #0c1a2c;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .card.full {
+            grid-column: 1 / -1;
+        }
+
+        .card h3 {
+            color: #e5b85c;
+            margin-bottom: 14px;
+        }
+
+        .card p,
+        .card li {
+            color: #c1ccda;
+            line-height: 1.7;
+        }
+
+        .card ul {
+            padding-left: 20px;
+        }
+
+        .attention {
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .item {
+            padding: 12px;
+            background: #101f32;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        .item:last-child {
+            margin-bottom: 0;
+        }
+
+        .empty {
+            color: #718096;
+        }
+
+        .disclaimer {
+            text-align: center;
+            color: #718096;
+            font-size: 12px;
+            line-height: 1.6;
+            padding: 30px 20px 50px;
+            max-width: 800px;
+            margin: auto;
+        }
+
+        @media (max-width: 700px) {
+            .navbar {
+                padding: 0 20px;
+            }
+
+            .hero {
+                padding-top: 50px;
+            }
+
+            .upload-card {
+                padding: 20px;
+            }
+
+            .drop-zone {
+                padding: 35px 15px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card.full {
+                grid-column: auto;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
-<nav>
-  <div class="container" style="display:flex;align-items:center;justify-content:space-between;width:100%">
-    <div class="logo">⚖ <span>LEGAL</span> DETECTIVE</div>
-    <div class="nav-links">
-      <a href="#analyze">Analyze</a>
-      <a href="#features">Features</a>
-      <a href="#results">Results</a>
-    </div>
-  </div>
+<nav class="navbar">
+    <div class="logo">⚖ Legal Detective</div>
+    <a class="nav-link" href="#upload">Document Analyzer</a>
 </nav>
+
+<section class="hero">
+    <div class="badge">AI-POWERED LEGAL DOCUMENT ANALYSIS</div>
+
+    <h1>
+        Find what the <span>law is hiding.</span>
+    </h1>
+
+    <p>
+        Upload a legal document and discover important clauses,
+        rights, obligations, risks, dates, financial information
+        and legal references in a simpler format.
+    </p>
+</section>
 
 <main class="container">
 
-<section class="hero">
-  <div>
-    <div class="badge">🔎 AI DOCUMENT INVESTIGATOR</div>
-    <h1>Find what the <span>law</span> is hiding.</h1>
-    <p>
-      Upload a contract, deed, judgment, notice, affidavit, petition, Act,
-      regulation, court document, policy or other legal file. Legal Detective
-      first decides whether the document is genuinely law-related, then gives
-      you a structured investigation — not just a list of clauses.
-    </p>
-    <div class="hero-actions">
-      <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">📄 Upload Document</button>
-      <a class="btn btn-secondary" href="#features" style="text-decoration:none">Explore Features</a>
-    </div>
-  </div>
+    <section class="upload-card" id="upload">
 
-  <div class="hero-card">
-    <div class="scan-head">
-      <span>DOCUMENT INVESTIGATION</span>
-      <span style="display:flex;align-items:center;gap:8px"><i class="dot"></i> READY</span>
-    </div>
-    <div class="mock-doc">
-      <div class="mock-title">LEGAL DOCUMENT</div>
-      <div class="line"></div><div class="line mid"></div><div class="line short"></div>
-      <div class="highlight">
-        <small>KEY PROVISION</small>
-        <b>Rights • Duties • Dates • Remedies</b>
-      </div>
-      <div class="line"></div><div class="line mid"></div><div class="line"></div>
-      <div class="line short"></div>
-    </div>
-  </div>
-</section>
+        <div class="drop-zone" id="dropZone">
 
-<section id="analyze" class="card upload-card">
-  <div class="eyebrow">STEP 01 · UPLOAD</div>
-  <h2 class="section-title" style="margin-top:15px">Start an investigation</h2>
-  <p class="muted">
-    PDF, DOCX, TXT, MD and RTF are supported. Scanned/image-based PDFs are
-    sent as the original document so the AI can inspect the pages instead of
-    failing just because text extraction is weak.
-  </p>
+            <div class="upload-icon">📄</div>
 
-  <label class="dropzone" id="dropzone" for="fileInput">
-    <div class="upload-icon">📑</div>
-    <h3>Drop your legal document here</h3>
-    <p>
-      Contracts · Deeds · Judgments · Orders · Petitions · Notices · Affidavits
-      · Acts · Regulations · Policies · Court documents · More
-    </p>
-    <span class="btn btn-secondary">Choose file</span>
-    <input id="fileInput" type="file" accept=".pdf,.docx,.txt,.md,.rtf">
-  </label>
+            <h2>Upload your legal document</h2>
 
-  <div class="file-row" id="fileRow">
-    <div>
-      <div class="file-name" id="fileName"></div>
-      <div class="file-size" id="fileSize"></div>
-    </div>
-    <button class="btn btn-secondary" type="button" onclick="clearFile()">Remove</button>
-  </div>
+            <p>
+                Supported formats: PDF, DOCX and TXT
+            </p>
 
-  <button id="analyzeButton" class="btn btn-primary analyze-btn" disabled>
-    🔍 Investigate Document
-  </button>
-</section>
+            <label for="fileInput" class="choose-btn">
+                Select Document
+            </label>
 
-<section id="loading" class="card loading">
-  <div class="spinner"></div>
-  <h3>Legal Detective is investigating…</h3>
-  <p class="muted">First checking the document type, then extracting the legal picture.</p>
-</section>
+            <input
+                type="file"
+                id="fileInput"
+                accept=".pdf,.docx,.txt"
+            >
 
-<section id="result" class="result">
-  <div id="statusBox"></div>
+            <div class="file-name" id="fileName"></div>
 
-  <div id="legalContent" style="display:none">
-    <div class="card">
-      <div class="eyebrow">DOCUMENT VERIFIED</div>
-      <h2 id="documentTitle" class="section-title" style="margin-top:14px"></h2>
-      <p id="summaryTop" class="muted"></p>
-
-      <div class="meta-grid">
-        <div class="meta"><strong>DOCUMENT TYPE</strong><span id="documentType"></span></div>
-        <div class="meta"><strong>CONFIDENCE</strong><span id="confidence"></span></div>
-        <div class="meta"><strong>JURISDICTION</strong><span id="jurisdiction"></span></div>
-        <div class="meta"><strong>LANGUAGE</strong><span id="language"></span></div>
-      </div>
-    </div>
-
-    <div class="tabs" id="tabs">
-      <button class="tab active" data-panel="overview">Overview</button>
-      <button class="tab" data-panel="clauses">Clauses</button>
-      <button class="tab" data-panel="rights">Rights & Duties</button>
-      <button class="tab" data-panel="risks">Risks</button>
-      <button class="tab" data-panel="dates">Dates</button>
-      <button class="tab" data-panel="money">Money</button>
-      <button class="tab" data-panel="laws">Acts & Laws</button>
-      <button class="tab" data-panel="parties">Parties</button>
-      <button class="tab" data-panel="qa">Ask AI</button>
-    </div>
-
-    <div id="overview" class="panel active">
-      <div class="grid">
-        <div class="info-card full">
-          <h3>📋 Summary</h3>
-          <p id="summary" class="muted"></p>
         </div>
-        <div class="info-card">
-          <h3>💡 In Simple Language</h3>
-          <p id="simpleExplanation" class="muted"></p>
+
+        <button class="analyze-btn" id="analyzeBtn" disabled>
+            🔍 Analyze Document
+        </button>
+
+        <div class="status" id="status"></div>
+
+    </section>
+
+    <section class="results" id="results">
+
+        <div class="results-header">
+            <h2>Analysis Results</h2>
+            <p id="documentType"></p>
         </div>
-        <div class="info-card">
-          <h3>⚠️ Overall Attention</h3>
-          <p><span id="attention" class="level"></span></p>
-          <p id="attentionReason" class="muted"></p>
+
+        <div class="grid">
+
+            <div class="card full">
+                <h3>📋 Summary</h3>
+                <p id="summary"></p>
+            </div>
+
+            <div class="card full">
+                <h3>💡 Simple Explanation</h3>
+                <p id="simpleExplanation"></p>
+            </div>
+
+            <div class="card">
+                <h3>👥 Parties</h3>
+                <div id="parties"></div>
+            </div>
+
+            <div class="card">
+                <h3>⚠️ Risks & Attention</h3>
+                <div id="risks"></div>
+            </div>
+
+            <div class="card">
+                <h3>✅ Rights</h3>
+                <div id="rights"></div>
+            </div>
+
+            <div class="card">
+                <h3>📌 Obligations</h3>
+                <div id="obligations"></div>
+            </div>
+
+            <div class="card">
+                <h3>📅 Important Dates</h3>
+                <div id="dates"></div>
+            </div>
+
+            <div class="card">
+                <h3>💰 Financial Information</h3>
+                <div id="money"></div>
+            </div>
+
+            <div class="card full">
+                <h3>📜 Acts & Legal References</h3>
+                <div id="legalReferences"></div>
+            </div>
+
+            <div class="card full">
+                <h3>🔎 Important Clauses</h3>
+                <div id="clauses"></div>
+            </div>
+
         </div>
-        <div class="info-card">
-          <h3>🚪 Termination / Ending</h3>
-          <p id="termination" class="muted"></p>
-        </div>
-        <div class="info-card">
-          <h3>⚖️ Disputes & Governing Law</h3>
-          <p id="dispute" class="muted"></p>
-          <p id="governingLaw" class="muted"></p>
-        </div>
-        <div class="info-card full">
-          <h3>❓ Missing / Unclear</h3>
-          <ul id="missing" class="list"></ul>
-        </div>
-      </div>
-    </div>
 
-    <div id="clauses" class="panel">
-      <div class="card">
-        <h2 class="section-title">📜 Key Clauses / Provisions</h2>
-        <p class="muted">The investigator adapts this section to the document type.</p>
-        <ul id="clausesList" class="list"></ul>
-      </div>
-      <div class="card">
-        <h2 class="section-title">🧾 Important Terms</h2>
-        <ul id="termsList" class="list"></ul>
-      </div>
-    </div>
-
-    <div id="rights" class="panel">
-      <div class="grid">
-        <div class="info-card"><h3>✅ Rights</h3><ul id="rightsList" class="list"></ul></div>
-        <div class="info-card"><h3>📌 Obligations</h3><ul id="obligationsList" class="list"></ul></div>
-      </div>
-    </div>
-
-    <div id="risks" class="panel">
-      <div class="grid">
-        <div class="info-card"><h3>⚠️ Risks & Attention</h3><ul id="risksList" class="list"></ul></div>
-        <div class="info-card"><h3>🧩 Missing / Unclear</h3><ul id="missing2" class="list"></ul></div>
-      </div>
-    </div>
-
-    <div id="dates" class="panel">
-      <div class="grid">
-        <div class="info-card"><h3>📅 Important Dates</h3><ul id="datesList" class="list"></ul></div>
-        <div class="info-card"><h3>🕒 Timeline</h3><ul id="timelineList" class="list"></ul></div>
-      </div>
-    </div>
-
-    <div id="money" class="panel">
-      <div class="card">
-        <h2 class="section-title">💰 Financial Information</h2>
-        <ul id="moneyList" class="list"></ul>
-      </div>
-    </div>
-
-    <div id="laws" class="panel">
-      <div class="card">
-        <h2 class="section-title">📚 Acts, Laws & Legal References</h2>
-        <p class="muted">
-          These are references actually found or clearly identified in the
-          uploaded document. Legal Detective does not invent an Act simply
-          because it might apply.
-        </p>
-        <ul id="lawsList" class="list"></ul>
-      </div>
-    </div>
-
-    <div id="parties" class="panel">
-      <div class="card">
-        <h2 class="section-title">👥 Parties & Entities</h2>
-        <ul id="partiesList" class="list"></ul>
-      </div>
-    </div>
-
-    <div id="qa" class="panel">
-      <div class="card ask-card">
-        <div class="eyebrow">DOCUMENT Q&A</div>
-        <h2 class="section-title" style="margin-top:14px">Ask the document</h2>
-        <p class="muted">Ask about the uploaded document. Answers are grounded in the original file.</p>
-        <div class="ask-row">
-          <input id="question" placeholder="e.g. What happens if the tenant ends the lease early?">
-          <button id="askButton" class="btn btn-primary">🤖 Ask AI</button>
-        </div>
-        <div id="chatAnswer" class="answer"></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section id="features" class="card" style="margin-bottom:70px">
-  <div class="eyebrow">MORE THAN CLAUSES</div>
-  <h2 class="section-title" style="margin-top:14px">One upload. A complete legal investigation.</h2>
-  <div class="grid" style="margin-top:20px">
-    <div class="info-card"><h3>🔎 Legal / Not Legal</h3><p class="muted">Clear classification before analysis, with a reason and confidence.</p></div>
-    <div class="info-card"><h3>📚 Acts & Laws</h3><p class="muted">Extracts legal authorities actually mentioned in the document.</p></div>
-    <div class="info-card"><h3>⚠️ Risk Radar</h3><p class="muted">Highlights concrete attention points instead of calling every clause a risk.</p></div>
-    <div class="info-card"><h3>📅 Timeline</h3><p class="muted">Organizes dates, deadlines, renewals and other important events.</p></div>
-    <div class="info-card"><h3>💰 Money Map</h3><p class="muted">Finds rent, fees, deposits, penalties, interest, damages and payments.</p></div>
-    <div class="info-card"><h3>💬 Ask Anything</h3><p class="muted">Ask questions directly against the original uploaded document.</p></div>
-  </div>
-</section>
-
-<footer class="footer">
-  Legal Detective is an informational document-analysis tool and does not replace
-  advice from a qualified lawyer. Always verify important legal conclusions with
-  the applicable law and a professional.
-</footer>
+    </section>
 
 </main>
 
+<div class="disclaimer">
+    Legal Detective is an educational AI-powered document analysis
+    prototype. Its results may contain errors or omissions and are
+    not a substitute for advice from a qualified legal professional.
+</div>
+
+
 <script>
+
 const fileInput = document.getElementById("fileInput");
-const dropzone = document.getElementById("dropzone");
-const fileRow = document.getElementById("fileRow");
+const dropZone = document.getElementById("dropZone");
 const fileName = document.getElementById("fileName");
-const fileSize = document.getElementById("fileSize");
-const analyzeButton = document.getElementById("analyzeButton");
-const loading = document.getElementById("loading");
-const result = document.getElementById("result");
-const legalContent = document.getElementById("legalContent");
-const statusBox = document.getElementById("statusBox");
+const analyzeBtn = document.getElementById("analyzeBtn");
+const statusBox = document.getElementById("status");
+const results = document.getElementById("results");
 
-let currentDocumentId = null;
+let selectedFile = null;
 
-function escapeHtml(value) {
-  if (value === null || value === undefined) return "";
-  return String(value)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
 
-function displayList(id, items) {
-  const el = document.getElementById(id);
-  el.innerHTML = "";
+/* ---------------- FILE SELECTION ---------------- */
 
-  if (!Array.isArray(items) || items.length === 0) {
-    el.innerHTML = '<li class="empty">Not specified in the document.</li>';
-    return;
-  }
-
-  items.forEach(item => {
-    const li = document.createElement("li");
-    li.innerHTML = escapeHtml(item);
-    el.appendChild(li);
-  });
-}
-
-function formatBytes(bytes) {
-  if (!bytes) return "";
-  const units = ["B","KB","MB","GB"];
-  let i = 0, n = bytes;
-  while (n >= 1024 && i < units.length - 1) {
-    n /= 1024; i++;
-  }
-  return `${n.toFixed(i ? 1 : 0)} ${units[i]}`;
-}
-
-function setFile(file) {
-  if (!file) return;
-
-  fileInput.files = (() => {
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    return dt.files;
-  })();
-
-  fileName.textContent = "📄 " + file.name;
-  fileSize.textContent = formatBytes(file.size);
-  fileRow.style.display = "flex";
-  analyzeButton.disabled = false;
-}
-
-function clearFile() {
-  fileInput.value = "";
-  fileRow.style.display = "none";
-  analyzeButton.disabled = true;
-}
-
-fileInput.addEventListener("change", () => {
-  setFile(fileInput.files[0]);
+fileInput.addEventListener("change", function () {
+    if (this.files.length > 0) {
+        selectFile(this.files[0]);
+    }
 });
 
-["dragenter","dragover"].forEach(evt => {
-  dropzone.addEventListener(evt, e => {
+
+function selectFile(file) {
+
+    const allowed = [
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "text/plain"
+    ];
+
+    const extension = file.name.split(".").pop().toLowerCase();
+
+    if (!["pdf", "docx", "txt"].includes(extension)) {
+        alert("Please upload a PDF, DOCX or TXT file.");
+        return;
+    }
+
+    selectedFile = file;
+
+    fileName.textContent = "Selected: " + file.name;
+
+    analyzeBtn.disabled = false;
+}
+
+
+/* ---------------- DRAG & DROP ---------------- */
+
+dropZone.addEventListener("dragover", function (e) {
     e.preventDefault();
-    dropzone.classList.add("drag");
-  });
+    dropZone.classList.add("dragover");
 });
-["dragleave","drop"].forEach(evt => {
-  dropzone.addEventListener(evt, e => {
+
+dropZone.addEventListener("dragleave", function () {
+    dropZone.classList.remove("dragover");
+});
+
+dropZone.addEventListener("drop", function (e) {
+
     e.preventDefault();
-    dropzone.classList.remove("drag");
-  });
-});
-dropzone.addEventListener("drop", e => {
-  const file = e.dataTransfer.files[0];
-  setFile(file);
+
+    dropZone.classList.remove("dragover");
+
+    if (e.dataTransfer.files.length > 0) {
+        selectFile(e.dataTransfer.files[0]);
+    }
 });
 
-document.querySelectorAll(".tab").forEach(tab => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
-    tab.classList.add("active");
-    document.getElementById(tab.dataset.panel).classList.add("active");
-  });
+
+/* ---------------- ANALYSIS ---------------- */
+
+analyzeBtn.addEventListener("click", async function () {
+
+    if (!selectedFile) return;
+
+    analyzeBtn.disabled = true;
+
+    statusBox.style.display = "block";
+    statusBox.textContent = "🔍 Analyzing your document...";
+
+    results.style.display = "none";
+
+    const formData = new FormData();
+
+    formData.append("file", selectedFile);
+
+    try {
+
+        const response = await fetch("/analyze", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || "Analysis failed.");
+        }
+
+        displayResults(data);
+
+        statusBox.textContent = "✅ Analysis complete.";
+
+    } catch (error) {
+
+        statusBox.textContent = "❌ " + error.message;
+
+    } finally {
+
+        analyzeBtn.disabled = false;
+
+    }
+
 });
 
-function showFirstTab() {
-  document.querySelectorAll(".tab").forEach((t,i) => t.classList.toggle("active", i === 0));
-  document.querySelectorAll(".panel").forEach((p,i) => p.classList.toggle("active", i === 0));
+
+/* ---------------- DISPLAY RESULTS ---------------- */
+
+function displayResults(data) {
+
+    results.style.display = "block";
+
+    const analysis = data.analysis || data;
+
+    document.getElementById("documentType").textContent =
+        analysis.document_type || "Legal Document";
+
+    document.getElementById("summary").textContent =
+        analysis.summary || "No summary available.";
+
+    document.getElementById("simpleExplanation").textContent =
+        analysis.simple_explanation || "No explanation available.";
+
+    renderList(
+        "parties",
+        analysis.parties
+    );
+
+    renderList(
+        "risks",
+        analysis.risks_and_attention
+    );
+
+    renderList(
+        "rights",
+        analysis.rights
+    );
+
+    renderList(
+        "obligations",
+        analysis.obligations
+    );
+
+    renderList(
+        "dates",
+        analysis.important_dates
+    );
+
+    renderList(
+        "money",
+        analysis.financial_information
+    );
+
+    renderList(
+        "legalReferences",
+        analysis.legal_references
+    );
+
+    renderList(
+        "clauses",
+        analysis.key_clauses
+    );
+
+    results.scrollIntoView({
+        behavior: "smooth"
+    });
 }
 
-analyzeButton.addEventListener("click", async () => {
-  const file = fileInput.files[0];
-  if (!file) return;
 
-  loading.style.display = "block";
-  result.style.display = "none";
-  legalContent.style.display = "none";
-  analyzeButton.disabled = true;
+/* ---------------- LIST RENDERER ---------------- */
 
-  const formData = new FormData();
-  formData.append("file", file);
+function renderList(id, items) {
 
-  try {
-    const response = await fetch("/analyze", {
-      method: "POST",
-      body: formData
+    const element = document.getElementById(id);
+
+    element.innerHTML = "";
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+
+        element.innerHTML =
+            '<div class="empty">No information found.</div>';
+
+        return;
+    }
+
+    items.forEach(item => {
+
+        const div = document.createElement("div");
+
+        div.className = "item";
+
+        if (typeof item === "string") {
+            div.textContent = item;
+        } else {
+            div.textContent = JSON.stringify(item);
+        }
+
+        element.appendChild(div);
+
     });
-
-    const data = await response.json();
-
-    loading.style.display = "none";
-    result.style.display = "block";
-    analyzeButton.disabled = false;
-
-    if (!response.ok || data.status === "error") {
-      statusBox.className = "status error";
-      statusBox.innerHTML = `
-        <div class="status-title">❌ Analysis failed</div>
-        <div>${escapeHtml(data.message || "Something went wrong.")}</div>
-      `;
-      return;
-    }
-
-    if (data.status === "not_legal") {
-      statusBox.className = "status notlegal";
-      statusBox.innerHTML = `
-        <div class="status-title">🚫 This does not appear to be a legal document.</div>
-        <div style="line-height:1.7">
-          <b>Detected type:</b> ${escapeHtml(data.document_type)}<br>
-          <b>Confidence:</b> ${escapeHtml(data.confidence)}%<br>
-          <b>Jurisdiction:</b> ${escapeHtml(data.jurisdiction || "Not specified")}<br><br>
-          ${escapeHtml(data.reason)}
-        </div>
-        <small>Legal analysis was not performed because the document was not classified as law-related.</small>
-      `;
-      return;
-    }
-
-    currentDocumentId = data.document_id;
-    const a = data.analysis || {};
-
-    statusBox.className = "status legal";
-    statusBox.innerHTML = `
-      <div class="status-title">✅ Legal document detected</div>
-      <div style="line-height:1.7">
-        Legal Detective completed a multi-section investigation of the uploaded document.
-        <br><small>Classification confidence: ${escapeHtml(data.classification_confidence)}%</small>
-      </div>
-    `;
-
-    legalContent.style.display = "block";
-    showFirstTab();
-
-    document.getElementById("documentTitle").textContent = a.title || data.document_type || "Legal document";
-    document.getElementById("summaryTop").textContent = a.summary || "Not specified in the document.";
-    document.getElementById("documentType").textContent = a.document_type || data.document_type || "Unknown";
-    document.getElementById("confidence").textContent = (data.classification_confidence ?? 0) + "%";
-    document.getElementById("jurisdiction").textContent = a.jurisdiction || data.jurisdiction || "Not specified";
-    document.getElementById("language").textContent = a.language || "Not specified";
-    document.getElementById("summary").textContent = a.summary || "Not specified in the document.";
-    document.getElementById("simpleExplanation").textContent = a.simple_explanation || "Not specified in the document.";
-    document.getElementById("termination").textContent = a.termination || "Not specified in the document.";
-    document.getElementById("dispute").textContent = a.dispute_resolution || "Not specified in the document.";
-    document.getElementById("governingLaw").textContent = a.governing_law || "Not specified in the document.";
-    document.getElementById("attention").textContent = a.overall_attention_level || "Unknown";
-    document.getElementById("attentionReason").textContent = a.overall_reason || "";
-
-    displayList("missing", a.missing_or_unclear);
-    displayList("missing2", a.missing_or_unclear);
-    displayList("clausesList", a.key_clauses);
-    displayList("termsList", a.important_terms);
-    displayList("rightsList", a.rights);
-    displayList("obligationsList", a.obligations);
-    displayList("risksList", a.risks_and_attention);
-    displayList("datesList", a.important_dates);
-    displayList("timelineList", a.timeline);
-    displayList("moneyList", a.financial_information);
-    displayList("lawsList", a.legal_references);
-    displayList("partiesList", a.parties);
-
-    document.getElementById("result").scrollIntoView({behavior:"smooth", block:"start"});
-  } catch (error) {
-    loading.style.display = "none";
-    result.style.display = "block";
-    analyzeButton.disabled = false;
-    statusBox.className = "status error";
-    statusBox.innerHTML = `
-      <div class="status-title">❌ Connection error</div>
-      <div>${escapeHtml(error.message)}</div>
-    `;
-  }
-});
-
-document.getElementById("askButton").addEventListener("click", askQuestion);
-
-document.getElementById("question").addEventListener("keydown", e => {
-  if (e.key === "Enter") askQuestion();
-});
-
-async function askQuestion() {
-  const input = document.getElementById("question");
-  const answer = document.getElementById("chatAnswer");
-  const question = input.value.trim();
-
-  answer.style.display = "block";
-
-  if (!question) {
-    answer.textContent = "Please type a question first.";
-    return;
-  }
-
-  if (!currentDocumentId) {
-    answer.textContent = "Please upload and investigate a legal document first.";
-    return;
-  }
-
-  answer.textContent = "🔎 Looking through the original document...";
-
-  try {
-    const response = await fetch("/ask", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({
-        question,
-        document_id: currentDocumentId
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok || data.status !== "success") {
-      answer.textContent = data.message || "Could not answer the question.";
-      return;
-    }
-
-    answer.textContent = data.answer;
-  } catch (error) {
-    answer.textContent = "Something went wrong while asking the document.";
-  }
 }
+
 </script>
 
 </body>
